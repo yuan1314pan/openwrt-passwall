@@ -27,7 +27,7 @@ on:
           - mipsel_74kc
           - mipsel_mips32
       sdk_type:
-        description: 'Select SDK type'
+        description: '选择sdk类型'
         required: true
         default: 'stable'
         type: choice
@@ -35,12 +35,12 @@ on:
           - stable
           - snapshot
       compile_packages:
-        description: 'Compile dependency packages?'
+        description: '是否编译依赖包'
         required: false
         default: 'true'
         type: boolean
       ssh:
-        description: 'Enable SSH connection to Actions'
+        description: '是否开启ssh调试'
         required: false
         default: 'false'
         type: boolean
