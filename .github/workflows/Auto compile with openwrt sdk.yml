@@ -307,14 +307,6 @@ jobs:
           
           echo "FIRMWARE=$(pwd)/.." >> $GITHUB_ENV
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: passwall-${{ inputs.platform }}-${{ inputs.sdk_type }}
-          path: |
-            ${{ env.FIRMWARE }}/output/
-            ${{ env.FIRMWARE }}/*.zip
-          retention-days: 7
 
       - name: Generate summary
         if: always()
