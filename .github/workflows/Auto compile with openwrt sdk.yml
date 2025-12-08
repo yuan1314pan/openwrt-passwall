@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       platform:
-        description: 'Select target platform'
+        description: '选择平台'
         required: true
         default: 'x86_64'
         type: choice
