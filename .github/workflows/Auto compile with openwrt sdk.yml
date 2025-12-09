@@ -312,9 +312,10 @@ jobs:
         with:
           name: passwall-${{ inputs.platform }}-${{ inputs.sdk_type }}
           path: |
-            ${{ env.FIRMWARE }}/output/
-            ${{ env.FIRMWARE }}/*.zip
+            sdk/output/
+            sdk/output/*.zip
           retention-days: 7
+
 
       - name: Generate summary
         if: always()
