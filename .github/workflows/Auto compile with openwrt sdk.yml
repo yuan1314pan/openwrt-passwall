@@ -327,3 +327,49 @@ jobs:
           echo "**Packages Compiled**: ${{ inputs.compile_packages }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Artifacts have been uploaded and can be downloaded from the workflow run page." >> $GITHUB_STEP_SUMMARY
+
+
+      # 创建 GitHub 发布的步骤
+      - name: 创建发布
+        id: create_release
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          PLATFORM=${{ inputs.platform }}
+          SDK_TYPE=${{ inputs.sdk_type }}
+          RELEASE_NAME="passwall_${PLATFORM}_${SDK_TYPE}_v${VERSION}"
+          DESCRIPTION="Release of passwall for platform ${PLATFORM} using ${SDK_TYPE} SDK version ${VERSION}."
+
+          # 使用 GitHub API 创建发布
+          RESPONSE=$(curl -s -X POST https://api.github.com/repos/${{ github.repository }}/releases \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d @- <<EOF
+          {
+            "tag_name": "v${VERSION}",
+            "target_commitish": "${{ github.sha }}",
+            "name": "${RELEASE_NAME}",
+            "body": "${DESCRIPTION}",
+            "draft": false,
+            "prerelease": false
+          }
+          EOF)
+
+          # 从响应中提取发布 ID
+          RELEASE_ID=$(echo $RESPONSE | jq -r .id)
+
+          echo "发布 ID: $RELEASE_ID"
+          echo "RELEASE_ID=${RELEASE_ID}" >> $GITHUB_ENV
+
+      # 上传发布文件到刚创建的发布
+      - name: 上传发布文件
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          PLATFORM=${{ inputs.platform }}
+          SDK_TYPE=${{ inputs.sdk_type }}
+          ZIP_FILE_PATH="sdk/output/passwall_${PLATFORM}_${SDK_TYPE}_full.zip"
+          
+          # 将编译好的 zip 文件作为发布附件上传
+          curl -s -X POST https://uploads.github.com/repos/${{ github.repository }}/releases/${{ env.RELEASE_ID }}/assets?name=$(basename $ZIP_FILE_PATH) \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/zip" \
+            --data-binary @"$ZIP_FILE_PATH"
+          echo "发布附件上传成功。"
