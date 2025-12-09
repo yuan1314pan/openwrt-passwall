@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       platform:
-        description: '选择平台'
+        description: 'Select target platform'
         required: true
         default: 'x86_64'
         type: choice
@@ -27,7 +27,7 @@ on:
           - mipsel_74kc
           - mipsel_mips32
       sdk_type:
-        description: '选择sdk类型'
+        description: 'Select SDK type'
         required: true
         default: 'stable'
         type: choice
@@ -35,12 +35,12 @@ on:
           - stable
           - snapshot
       compile_packages:
-        description: '是否编译依赖包'
+        description: 'Compile dependency packages?'
         required: false
         default: 'true'
         type: boolean
       ssh:
-        description: '是否开启ssh调试'
+        description: 'Enable SSH connection to Actions'
         required: false
         default: 'false'
         type: boolean
@@ -138,7 +138,7 @@ jobs:
           else
             sdk_url="${snapshot_sdks[${{ inputs.platform }}]}"
           fi
-          
+          
           echo "sdk_url=${sdk_url}" >> $GITHUB_OUTPUT
           echo "Selected SDK URL: ${sdk_url}"
 
@@ -163,7 +163,7 @@ jobs:
       - name: Configure feeds and patches
         run: |
           cd sdk
-          
+          
           # Update feeds to github source
           sed -i \
               -e 's|git\.openwrt\.org/feed|github.com/openwrt|g' \
@@ -183,7 +183,7 @@ jobs:
 
           # Apply patches
           echo "Start applying patches..."
-          
+          
           rm -rf temp_resp
           git clone -b master --single-branch https://github.com/openwrt/packages.git temp_resp
           echo "Update golang version"
@@ -214,7 +214,7 @@ jobs:
           echo "CONFIG_SIGNED_PACKAGES=n" >> .config
           echo "CONFIG_LUCI_LANG_zh_Hans=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-passwall=m" >> .config
-          
+          
           # Enable all Passwall features
           echo "CONFIG_PACKAGE_luci-app-passwall_Iptables_Transparent_Proxy=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-passwall_Nftables_Transparent_Proxy=y" >> .config
@@ -263,24 +263,24 @@ jobs:
       - name: Organize output files
         run: |
           cd sdk
-          
+          
           # Create output directory
           mkdir -p output
-          
+          
           # Copy luci-app-passwall packages
           for luci_pkg in bin/packages/*/passwall/luci-app-passwall*; do
               if [ -f "$luci_pkg" ]; then
                   cp "$luci_pkg" output/
               fi
           done
-          
+          
           # Copy dependency packages if compiled
           if [ "${{ inputs.compile_packages }}" == "true" ]; then
               mkdir -p output/packages
               shopt -s nullglob
               for src_dir in bin/packages/*/{packages,passwall_packages}; do
                   [[ -d "$src_dir" ]] || continue
-                  
+                  
                   for prefix in ${{ env.package_release }}; do
                       for file in "$src_dir"/"$prefix"*; do
                           [[ -f "$file" ]] || continue
@@ -289,14 +289,14 @@ jobs:
                   done
               done
           fi
-          
+          
           # Create info file
           echo "# Build Information" > output/build-info.txt
           echo "Platform: ${{ inputs.platform }}" >> output/build-info.txt
           echo "SDK Type: ${{ inputs.sdk_type }}" >> output/build-info.txt
           echo "Version: ${{ steps.get_version.outputs.version }}" >> output/build-info.txt
           echo "Build Date: $(date)" >> output/build-info.txt
-          
+          
           # Create ZIP archive
           cd output
           if [ "${{ inputs.compile_packages }}" == "true" ]; then
@@ -304,9 +304,17 @@ jobs:
           else
               zip -r ../passwall_${{ inputs.platform }}_${{ inputs.sdk_type }}_luci_only.zip ./*
           fi
-          
+          
           echo "FIRMWARE=$(pwd)/.." >> $GITHUB_ENV
 
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: passwall-${{ inputs.platform }}-${{ inputs.sdk_type }}
+          path: |
+            ${{ env.FIRMWARE }}/output/
+            ${{ env.FIRMWARE }}/*.zip
+          retention-days: 7
 
       - name: Generate summary
         if: always()
