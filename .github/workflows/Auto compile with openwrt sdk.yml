@@ -318,4 +318,3 @@ jobs:
           echo "**Packages Compiled**: ${{ inputs.compile_packages }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Artifacts have been uploaded and can be downloaded from the workflow run page." >> $GITHUB_STEP_SUMMARY
-增加发布功能后重新生成完整版
